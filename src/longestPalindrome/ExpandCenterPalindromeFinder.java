@@ -20,7 +20,7 @@ public final class ExpandCenterPalindromeFinder implements PalindromeFinder {
 
             if (len > bestEnd - bestStart + 1) {
                 bestStart = i - (len - 1) / 2;
-                bestEnd   = i + len / 2;
+                bestEnd = i + len / 2;
             }
         }
         String val = s.substring(bestStart, bestEnd + 1);
@@ -29,7 +29,8 @@ public final class ExpandCenterPalindromeFinder implements PalindromeFinder {
 
     private int expand(String s, int l, int r) {
         while (l >= 0 && r < s.length() && s.charAt(l) == s.charAt(r)) {
-            l--; r++;
+            l--;
+            r++;
         }
         return r - l - 1;
     }
