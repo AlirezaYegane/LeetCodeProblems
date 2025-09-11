@@ -7,22 +7,22 @@ import java.util.Scanner;
 
 /**
  * Test-friendly Main:
- *  - Choose algorithm via CLI arg or interactive command
- *  - Run built-in sample cases (--cases)
- *  - Run on arbitrary inputs (CLI args or interactive)
- *  - Show execution time and result metadata (start, len)
- *
+ * - Choose algorithm via CLI arg or interactive command
+ * - Run built-in sample cases (--cases)
+ * - Run on arbitrary inputs (CLI args or interactive)
+ * - Show execution time and result metadata (start, len)
+ * <p>
  * Examples:
- *   java longestPalindrome.Main --algo=manacher babad cbbd
- *   java longestPalindrome.Main --cases
- *   java longestPalindrome.Main          (interactive mode)
- *
+ * java longestPalindrome.Main --algo=manacher babad cbbd
+ * java longestPalindrome.Main --cases
+ * java longestPalindrome.Main          (interactive mode)
+ * <p>
  * Interactive commands:
- *   :algo manacher     or    :algo expand
- *   :cases             run sample cases
- *   :meta on|off       toggle metadata (start,len,time)
- *   :help              help
- *   :q                 quit
+ * :algo manacher     or    :algo expand
+ * :cases             run sample cases
+ * :meta on|off       toggle metadata (start,len,time)
+ * :help              help
+ * :q                 quit
  */
 public final class Main {
 
@@ -66,8 +66,14 @@ public final class Main {
             if (line.isEmpty()) continue;
 
             if (line.equals(":q")) break;
-            if (line.equals(":help")) { printHelp(); continue; }
-            if (line.equals(":cases")) { runCases(); continue; }
+            if (line.equals(":help")) {
+                printHelp();
+                continue;
+            }
+            if (line.equals(":cases")) {
+                runCases();
+                continue;
+            }
             if (line.startsWith(":meta")) {
                 String[] parts = line.split("\\s+");
                 if (parts.length == 2) {
