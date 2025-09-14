@@ -1,4 +1,4 @@
-package longestPalindrome;
+package algorithm.longestPalindrome;
 
 public class HashPreprocessor implements Preprocessor {
 

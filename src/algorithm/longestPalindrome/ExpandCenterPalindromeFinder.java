@@ -1,6 +1,4 @@
-package longestPalindrome;
-
-import java.util.Objects;
+package algorithm.longestPalindrome;
 
 public final class ExpandCenterPalindromeFinder implements PalindromeFinder {
 

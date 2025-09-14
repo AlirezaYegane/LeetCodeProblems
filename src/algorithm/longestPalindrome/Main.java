@@ -1,4 +1,4 @@
-package longestPalindrome;
+package algorithm.longestPalindrome;
 
 import java.util.Arrays;
 import java.util.List;

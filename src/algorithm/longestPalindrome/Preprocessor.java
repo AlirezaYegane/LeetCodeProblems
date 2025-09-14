@@ -1,4 +1,4 @@
-package longestPalindrome;
+package algorithm.longestPalindrome;
 
 public interface Preprocessor {
     /**

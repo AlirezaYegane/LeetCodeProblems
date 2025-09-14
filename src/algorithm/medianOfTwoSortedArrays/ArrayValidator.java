@@ -1,4 +1,4 @@
-package medianOfTwoSortedArrays;
+package algorithm.medianOfTwoSortedArrays;
 
 public final class ArrayValidator {
     private ArrayValidator() {}

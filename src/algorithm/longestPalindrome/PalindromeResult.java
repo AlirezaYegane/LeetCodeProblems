@@ -1,4 +1,4 @@
-package longestPalindrome;
+package algorithm.longestPalindrome;
 
 public record PalindromeResult(String value, int start, int length) {
     public static PalindromeResult empty() {

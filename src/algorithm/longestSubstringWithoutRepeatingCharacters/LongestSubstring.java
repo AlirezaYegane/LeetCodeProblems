@@ -1,4 +1,4 @@
-package longestSubstringWithoutRepeatingCharacters;
+package algorithm.longestSubstringWithoutRepeatingCharacters;
 
 
 public final class LongestSubstring {

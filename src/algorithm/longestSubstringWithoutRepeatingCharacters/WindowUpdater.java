@@ -1,4 +1,4 @@
-package longestSubstringWithoutRepeatingCharacters;
+package algorithm.longestSubstringWithoutRepeatingCharacters;
 
 
 public interface WindowUpdater {

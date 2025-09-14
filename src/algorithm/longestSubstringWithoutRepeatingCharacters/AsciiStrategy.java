@@ -1,4 +1,4 @@
-package longestSubstringWithoutRepeatingCharacters;
+package algorithm.longestSubstringWithoutRepeatingCharacters;
 
 public final class AsciiStrategy implements Strategy {
     private static final int ASCII_SIZE = 128;
