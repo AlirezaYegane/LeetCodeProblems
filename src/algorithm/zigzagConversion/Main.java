@@ -6,34 +6,44 @@ import java.util.Locale;
 import java.util.Scanner;
 
 /**
- * Test-friendly Main for Zigzag Conversion.
+ * Zigzag Conversion — Test-friendly Main
  *
  * Features:
  * - Choose algorithm via CLI arg or interactive command
  * - Run built-in sample cases (--cases)
  * - Run on arbitrary inputs (pairs of args: <s> <numRows>)
- * - Interactive mode with commands, and per-run prompts
+ * - ASCII drawing via --draw or :draw
+ * - Interactive mode with commands
  * - Show execution time and result metadata (len/time)
  *
  * Examples:
  *   java algorithm.zigzag.Main --algo=cycle "PAYPALISHIRING" 3
+ *   java algorithm.zigzag.Main --draw "PAYPALISHIRING" 4
  *   java algorithm.zigzag.Main --cases
  *   java algorithm.zigzag.Main          (interactive mode)
  *
  * Interactive commands:
- *   :algo cycle|sim            switch algorithm (cycle = cycle arithmetic, sim = simulated up/down)
+ *   :algo cycle|sim            switch algorithm (cycle = mirror mapping, sim = up/down)
  *   :cases                     run sample cases
  *   :meta on|off               toggle metadata (len,time)
+ *   :draw                      prompt for s and numRows, then ASCII render
  *   :help                      help
  *   :q                         quit
  */
 public final class Main {
 
+    /* ======================= Config / State ======================= */
+
     private static ZigzagService service = ZigzagService.cycleDefault();
+    private static ZigzagRenderer renderer = new AsciiZigzagRenderer();
     private static String currentAlgo = "cycle";
     private static boolean showMeta = true;
 
+    /* ======================= Entry ======================= */
+
     public static void main(String[] args) {
+        boolean drawMode = false;
+
         if (args != null && args.length > 0) {
             // parse flags
             for (String a : args) {
@@ -42,8 +52,11 @@ public final class Main {
                 } else if (a.equals("--cases")) {
                     runCases();
                     return;
+                } else if (a.equals("--draw")) {
+                    drawMode = true;
                 }
             }
+
             // treat non-flag args as pairs: <s> <numRows>
             List<String> inputs = Arrays.stream(args)
                     .filter(s -> !s.startsWith("--"))
@@ -60,11 +73,13 @@ public final class Main {
                         System.out.println("✖ invalid numRows: " + inputs.get(i + 1));
                         continue;
                     }
-                    runOnce(s, rows);
+                    if (drawMode) drawOnce(s, rows);
+                    else runOnce(s, rows);
                 }
                 return;
             }
         }
+
         // interactive mode
         interactiveLoop();
     }
@@ -99,8 +114,17 @@ public final class Main {
                 else System.out.println("usage: :algo cycle|sim");
                 continue;
             }
+            if (line.equals(":draw")) {
+                System.out.print("s = ");
+                String s = sc.nextLine();
+                System.out.print("numRows = ");
+                int rows = parseRows(sc.nextLine());
+                if (rows <= 0) System.out.println("✖ invalid numRows");
+                else drawOnce(s, rows);
+                continue;
+            }
 
-            // If it's not a command: treat as the string s
+            // Not a command: treat as string s; then prompt for rows
             String s = line;
             System.out.print("numRows = ");
             String rline = sc.nextLine().trim();
@@ -133,6 +157,11 @@ public final class Main {
         }
     }
 
+    private static void drawOnce(String s, int numRows) {
+        String grid = renderer.render(s, numRows);
+        System.out.println(grid);
+    }
+
     /* ======================= Algorithm switching ======================= */
 
     private static void switchAlgo(String name) {
@@ -156,14 +185,13 @@ public final class Main {
 
     private static void runCases() {
         System.out.println("Running sample cases (" + currentAlgo + "):");
-        // LeetCode samples + a few extras
         List<Case> samples = List.of(
                 new Case("PAYPALISHIRING", 3, "PAHNAPLSIIGYIR"),
                 new Case("PAYPALISHIRING", 4, "PINALSIGYAHRPI"),
                 new Case("A", 1, "A"),
                 new Case("AB", 1, "AB"),
                 new Case("AB", 2, "AB"),
-                new Case("HELLOZIGZAG", 4, null)
+                new Case("HELLOZIGZAG", 4, null) // no strict expect; just smoke test
         );
         for (Case c : samples) {
             System.out.println("input: s=\"" + c.s + "\", numRows=" + c.rows);
@@ -198,12 +226,17 @@ public final class Main {
                   :algo sim             switch to Simulated up/down (O(n))
                   :cases                run sample cases
                   :meta on|off          toggle len,time output
+                  :draw                 prompt for s and numRows, then ASCII draw
                   :help                 this help
                   :q                    quit
                 Input (interactive):
                   Type your string s, then you'll be prompted for numRows.
                 CLI (non-flag args):
                   Provide pairs: <s> <numRows>, e.g. "PAYPALISHIRING" 3
+                Flags:
+                  --algo=cycle|sim      choose algorithm
+                  --cases               run built-in cases and exit
+                  --draw                draw ASCII instead of converting
                 """);
     }
 
