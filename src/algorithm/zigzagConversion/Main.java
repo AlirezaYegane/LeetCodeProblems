@@ -6,46 +6,34 @@ import java.util.Locale;
 import java.util.Scanner;
 
 /**
- * Zigzag Conversion — Test-friendly Main
+ * Zigzag Conversion — Main (auto-draw after convert)
  *
- * Features:
- * - Choose algorithm via CLI arg or interactive command
- * - Run built-in sample cases (--cases)
- * - Run on arbitrary inputs (pairs of args: <s> <numRows>)
- * - ASCII drawing via --draw or :draw
- * - Interactive mode with commands
- * - Show execution time and result metadata (len/time)
- *
- * Examples:
- *   java algorithm.zigzag.Main --algo=cycle "PAYPALISHIRING" 3
- *   java algorithm.zigzag.Main --draw "PAYPALISHIRING" 4
- *   java algorithm.zigzag.Main --cases
- *   java algorithm.zigzag.Main          (interactive mode)
+ * Flags:
+ *   --algo=cycle|sim    choose algorithm
+ *   --cases             run sample cases and exit
+ *   --draw              force draw on   (default)
+ *   --nodraw            disable drawing
  *
  * Interactive commands:
- *   :algo cycle|sim            switch algorithm (cycle = mirror mapping, sim = up/down)
- *   :cases                     run sample cases
- *   :meta on|off               toggle metadata (len,time)
- *   :draw                      prompt for s and numRows, then ASCII render
- *   :help                      help
- *   :q                         quit
+ *   :algo cycle|sim
+ *   :cases
+ *   :meta on|off
+ *   :draw on|off        toggle auto drawing
+ *   :help
+ *   :q
  */
 public final class Main {
 
-    /* ======================= Config / State ======================= */
-
+    /* ========== State ========== */
     private static ZigzagService service = ZigzagService.cycleDefault();
     private static ZigzagRenderer renderer = new AsciiZigzagRenderer();
     private static String currentAlgo = "cycle";
     private static boolean showMeta = true;
-
-    /* ======================= Entry ======================= */
+    private static boolean showDraw = true;   // ← NEW: auto-draw after convert
 
     public static void main(String[] args) {
-        boolean drawMode = false;
-
         if (args != null && args.length > 0) {
-            // parse flags
+            // flags
             for (String a : args) {
                 if (a.startsWith("--algo=")) {
                     switchAlgo(a.substring("--algo=".length()));
@@ -53,11 +41,13 @@ public final class Main {
                     runCases();
                     return;
                 } else if (a.equals("--draw")) {
-                    drawMode = true;
+                    showDraw = true;
+                } else if (a.equals("--nodraw")) {
+                    showDraw = false;
                 }
             }
 
-            // treat non-flag args as pairs: <s> <numRows>
+            // non-flag args are pairs: <s> <numRows>
             List<String> inputs = Arrays.stream(args)
                     .filter(s -> !s.startsWith("--"))
                     .toList();
@@ -73,19 +63,16 @@ public final class Main {
                         System.out.println("✖ invalid numRows: " + inputs.get(i + 1));
                         continue;
                     }
-                    if (drawMode) drawOnce(s, rows);
-                    else runOnce(s, rows);
+                    runOnce(s, rows);   // ← convert + (optional) draw
                 }
                 return;
             }
         }
 
-        // interactive mode
         interactiveLoop();
     }
 
-    /* ======================= Interactive loop ======================= */
-
+    /* ========== Interactive loop ========== */
     private static void interactiveLoop() {
         printBanner();
         Scanner sc = new Scanner(System.in);
@@ -98,33 +85,35 @@ public final class Main {
             if (line.equals(":q")) break;
             if (line.equals(":help")) { printHelp(); continue; }
             if (line.equals(":cases")) { runCases(); continue; }
+
             if (line.startsWith(":meta")) {
-                String[] parts = line.split("\\s+");
-                if (parts.length == 2) {
-                    showMeta = parts[1].equalsIgnoreCase("on");
+                String[] p = line.split("\\s+");
+                if (p.length == 2) {
+                    showMeta = p[1].equalsIgnoreCase("on");
                     System.out.println("meta: " + (showMeta ? "ON" : "OFF"));
-                } else {
-                    System.out.println("usage: :meta on|off");
-                }
-                continue;
-            }
-            if (line.startsWith(":algo")) {
-                String[] parts = line.split("\\s+");
-                if (parts.length == 2) switchAlgo(parts[1]);
-                else System.out.println("usage: :algo cycle|sim");
-                continue;
-            }
-            if (line.equals(":draw")) {
-                System.out.print("s = ");
-                String s = sc.nextLine();
-                System.out.print("numRows = ");
-                int rows = parseRows(sc.nextLine());
-                if (rows <= 0) System.out.println("✖ invalid numRows");
-                else drawOnce(s, rows);
+                } else System.out.println("usage: :meta on|off");
                 continue;
             }
 
-            // Not a command: treat as string s; then prompt for rows
+            if (line.startsWith(":draw")) {
+                String[] p = line.split("\\s+");
+                if (p.length == 2) {
+                    showDraw = p[1].equalsIgnoreCase("on");
+                    System.out.println("draw: " + (showDraw ? "ON" : "OFF"));
+                } else {
+                    System.out.println("usage: :draw on|off");
+                }
+                continue;
+            }
+
+            if (line.startsWith(":algo")) {
+                String[] p = line.split("\\s+");
+                if (p.length == 2) switchAlgo(p[1]);
+                else System.out.println("usage: :algo cycle|sim");
+                continue;
+            }
+
+            // normal run: first token is s, then prompt for rows
             String s = line;
             System.out.print("numRows = ");
             String rline = sc.nextLine().trim();
@@ -133,37 +122,37 @@ public final class Main {
                 System.out.println("✖ invalid numRows: " + rline);
                 continue;
             }
-            runOnce(s, rows);
+            runOnce(s, rows);  // ← convert + auto-draw
         }
         System.out.println("bye 👋");
     }
 
-    /* ======================= Core execution ======================= */
-
+    /* ========== Execution (convert + optional draw) ========== */
     private static void runOnce(String s, int numRows) {
         long t0 = System.nanoTime();
         String res = service.convert(s, numRows);
         long t1 = System.nanoTime();
 
-        // main output
+        // conversion output
         System.out.println(res);
 
-        // optional metadata
+        // meta
         if (showMeta) {
             double ms = (t1 - t0) / 1_000_000.0;
             System.out.printf(Locale.US,
                     "[algo=%s] len=%d, time=%.3f ms%n",
                     currentAlgo, res.length(), ms);
         }
+
+        // auto-draw (ASCII)
+        if (showDraw) {
+            System.out.println("--- diagram ---");
+            String grid = renderer.render(s, numRows);
+            System.out.println(grid);
+        }
     }
 
-    private static void drawOnce(String s, int numRows) {
-        String grid = renderer.render(s, numRows);
-        System.out.println(grid);
-    }
-
-    /* ======================= Algorithm switching ======================= */
-
+    /* ========== Algo switching ========== */
     private static void switchAlgo(String name) {
         String n = name.toLowerCase(Locale.ROOT);
         switch (n) {
@@ -181,8 +170,7 @@ public final class Main {
         }
     }
 
-    /* ======================= Sample cases ======================= */
-
+    /* ========== Sample cases ========== */
     private static void runCases() {
         System.out.println("Running sample cases (" + currentAlgo + "):");
         List<Case> samples = List.of(
@@ -191,7 +179,7 @@ public final class Main {
                 new Case("A", 1, "A"),
                 new Case("AB", 1, "AB"),
                 new Case("AB", 2, "AB"),
-                new Case("HELLOZIGZAG", 4, null) // no strict expect; just smoke test
+                new Case("HELLOZIGZAG", 4, null)
         );
         for (Case c : samples) {
             System.out.println("input: s=\"" + c.s + "\", numRows=" + c.rows);
@@ -206,17 +194,21 @@ public final class Main {
                 double ms = (t1 - t0) / 1_000_000.0;
                 System.out.printf(Locale.US, "len=%d, time=%.3f ms%n", out.length(), ms);
             }
+            if (showDraw) {
+                System.out.println("--- diagram ---");
+                System.out.println(renderer.render(c.s, c.rows));
+            }
             System.out.println("---");
         }
     }
 
     private record Case(String s, int rows, String expect) {}
 
-    /* ======================= UI/Help ======================= */
-
+    /* ========== UI/Help ========== */
     private static void printBanner() {
         System.out.println("Zigzag Conversion — interactive tester");
-        System.out.println("current algo: " + currentAlgo + "  |  type :help for commands");
+        System.out.println("current algo: " + currentAlgo + "  |  draw: " + (showDraw ? "ON" : "OFF")
+                + "  |  type :help for commands");
     }
 
     private static void printHelp() {
@@ -226,27 +218,23 @@ public final class Main {
                   :algo sim             switch to Simulated up/down (O(n))
                   :cases                run sample cases
                   :meta on|off          toggle len,time output
-                  :draw                 prompt for s and numRows, then ASCII draw
+                  :draw on|off          toggle ASCII drawing after convert
                   :help                 this help
                   :q                    quit
                 Input (interactive):
                   Type your string s, then you'll be prompted for numRows.
-                CLI (non-flag args):
-                  Provide pairs: <s> <numRows>, e.g. "PAYPALISHIRING" 3
+                CLI pairs:
+                  <s> <numRows>   e.g. "PAYPALISHIRING" 3
                 Flags:
-                  --algo=cycle|sim      choose algorithm
-                  --cases               run built-in cases and exit
-                  --draw                draw ASCII instead of converting
+                  --algo=cycle|sim
+                  --cases
+                  --draw | --nodraw
                 """);
     }
 
-    /* ======================= Utils ======================= */
-
+    /* ========== Utils ========== */
     private static int parseRows(String text) {
-        try {
-            return Integer.parseInt(text.trim());
-        } catch (Exception e) {
-            return -1;
-        }
+        try { return Integer.parseInt(text.trim()); }
+        catch (Exception e) { return -1; }
     }
 }
